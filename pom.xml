@@ -99,6 +99,7 @@
     <module>streaming</module>
     <module>sql/catalyst</module>
     <module>sql/core</module>
+    <module>sql/fastbit</module>
     <module>sql/hive</module>
     <module>assembly</module>
     <module>external/flume</module>
