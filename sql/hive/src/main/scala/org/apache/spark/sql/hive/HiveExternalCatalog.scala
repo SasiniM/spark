@@ -24,12 +24,14 @@ import scala.util.control.NonFatal
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.hive.ql.metadata.HiveException
+
 import org.apache.thrift.TException
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog._
+import org.apache.spark.sql.fastbit.FastBitClient
 import org.apache.spark.sql.hive.client.HiveClient
 
 
@@ -185,7 +187,24 @@ private[spark] class HiveExternalCatalog(client: HiveClient, hadoopConf: Configu
                            baseTable: String,
                            indexHandlerClass: String,
                            columnNames: Array[String]): Unit = {
-    client.createIndex(indexTable, baseTable, indexHandlerClass, columnNames)
+    val result = client.getTableOption("default", baseTable)
+    val fieldNames = result.get.schema.fieldNames
+
+    val dataTypes = new Array[String](result.get.schema.fields.length)
+    var i = 0
+
+    for (i <- 0 to result.get.schema.fields.length - 1) {
+      dataTypes(i) = result.get.schema.fields(i).dataType.toString
+    }
+
+    val fastbitclient = new FastBitClient()
+    fastbitclient.createIndex(indexTable,
+      baseTable,
+      indexHandlerClass,
+      columnNames,
+      fieldNames, dataTypes)
+
+    // client.createIndex(indexTable, baseTable, indexHandlerClass, columnNames)
   }
 
   override def alterIndex(indexTable: String,
